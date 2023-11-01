@@ -1,0 +1,607 @@
+---
+title: "COD_20231101_MGK_IBS7048_week10_introduction_to_microbiome_analysis"
+author: "Minsik Kim"
+date: "2023-11-01"
+output:
+        rmdformats::downcute:
+        downcute_theme: "chaos"
+code_folding: show
+fig_width: 6
+fig_height: 6
+df_print: paged
+editor_options: 
+        chunk_output_type: inline
+markdown: 
+        wrap: 72
+---
+        
+```{r warning=FALSE, message=FALSE, echo=FALSE, results='hide', setup}
+#===============================================================================
+#BTC.LineZero.Header.1.1.0
+#===============================================================================
+#R Markdown environment setup and reporting utility.
+#===============================================================================
+#RLB.Dependencies:
+#   knitr, magrittr, pacman, rio, rmarkdown, rmdformats, tibble, yaml
+#===============================================================================
+#Input for document parameters, libraries, file paths, and options.
+#=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+knitr::opts_chunk$set(message=FALSE, warning = FALSE)
+
+path_working <- "/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/"
+path_library <- "/Library/Frameworks/R.framework/Resources/library"
+str_libraries <- c("tidyverse", "pacman", "yaml", "knitr", "rmarkdown", "rmdformats")
+
+
+YAML_header <-
+        '---
+title: "COD_20231101_MGK_IBS7048_week10_introduction_to_microbiome_analysis"
+author: "Minsik Kim"
+date: "2032.11.01"
+output:
+    rmdformats::downcute:
+        downcute_theme: "chaos"
+        code_folding: hide
+        fig_width: 6
+        fig_height: 6
+---'
+seed <- "20230920"
+
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Loads libraries, file paths, and other document options.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Boot <- function() {
+        .libPaths(path_library)
+        
+        require(pacman)
+        pacman::p_load(c("knitr", "rmarkdown", "rmdformats", "yaml"))
+        
+        knitr::opts_knit$set(root.dir = path_working)
+        
+        str_libraries |> unique() |> sort() -> str_libraries
+        pacman::p_load(char = str_libraries)
+        
+        set.seed(seed)
+}
+FUN.LineZero.Boot()
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Outputs R environment report.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Report <- function() {
+        cat("Line Zero Environment:\n\n")
+        paste("R:", pacman::p_version(), "\n") |> cat()
+        cat("Libraries:\n")
+        for (str_libraries in str_libraries) {
+                paste(
+                        "    ", str_libraries, ": ", pacman::p_version(package = str_libraries),
+                        "\n", sep = ""
+                ) |> cat()
+        }
+        paste("\nOperating System:", pacman::p_detectOS(), "\n") |> cat()
+        paste("    Library Path:", path_library, "\n") |> cat()
+        paste("    Working Path:", path_working, "\n") |> cat()
+        paste("Seed:", seed, "\n\n") |> cat()
+        cat("YAML Header:\n")
+        cat(YAML_header)
+}
+FUN.LineZero.Report()
+
+
+```
+
+This analysis pipe noted https://f1000research.com/articles/5-1492.
+
+# Roading the data
+
+from previous lecture.. we generated a phyloseq object. it can be saved to hard disk using the below command.
+
+`saveRDS(ps, "phyloseq_example.rds")`
+
+And it can be loaded to a new R session like below!
+
+```{r}
+
+
+
+library(phyloseq)
+library(tidyverse)
+library(microbiome)
+library(vegan)
+
+phyloseq <- readRDS("phyloseq_example.rds")
+
+```
+
+
+# Phyloseq object
+
+phyloseq is a list - list of multiple objects such as `sample_data`, `otu_table`, `tax_table`, etc.
+
+
+```{r}
+
+phyloseq
+
+```
+
+using `sample_data()` function, we can extract `sample_data` only from a phyloseq object
+
+```{r}
+sample_data(phyloseq)
+
+#or 
+
+phyloseq %>%sample_data()
+```
+
+Note that `sample_data` object is different from `data_frame`. However it can be converted into data_frame as below
+
+```{r}
+
+phyloseq %>% sample_data() %>% data.frame()
+
+```
+
+This is dataframe. You can manipulate it as you want.
+
+# OTU table
+
+`otu_table` object can be pulled out using `otu_table()` function. It is about the abundance (read counts) of each taxa, by sample
+
+```{r}
+
+otu_table(phyloseq)
+
+```
+
+# Tax table
+
+`tax_table` object? function `tax_table()`. It contains information about taxonomic rank of the ASVs. 
+
+```{r}
+tax_table(phyloseq)
+```
+
+
+# Basics of phyloseq
+
+The below functions will enable accessing the object within the phyloseq.
+
+```{r}
+
+sample_names(phyloseq)
+
+```
+
+```{r}
+
+taxa_names(phyloseq)
+
+```
+
+```{r}
+
+rank_names(phyloseq)
+
+```
+
+
+```{r}
+
+rank_names(phyloseq)
+
+```
+
+
+# Summary of phyloseq object
+
+Create table, number of features for each phyla
+```{r}
+table(tax_table(phyloseq)[, "Phylum"], exclude = NULL)
+```
+
+We can see that most of taxa were from Firmicutes phylum.
+
+Making a table of prevalence will show you this.
+
+```{r}
+
+# Compute prevalence of each feature, store as data.frame
+prevdf = apply(X = otu_table(phyloseq),
+                 MARGIN = ifelse(taxa_are_rows(phyloseq), yes = 1, no = 2),
+                 FUN = function(x){sum(x > 0)})
+# Add taxonomy and total read counts to this data.frame
+prevdf = data.frame(Prevalence = prevdf,
+                      TotalAbundance = taxa_sums(phyloseq),
+                      tax_table(phyloseq))
+
+
+plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))}) %>% 
+        rename(avg_reads = "1", prevalence = "2")
+```
+
+You ca do the same thing for other taxonomic ranks as well.
+
+```{r}
+
+plyr::ddply(prevdf, "Family", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))}) %>% 
+        rename(avg_reads = "1", prevalence = "2")
+
+```
+
+
+# Pevalence filtering
+
+In many literature, they filter taxa that is having low-prevalence (to remove sequencing errors). *It is not neccessary, but to do that you can use the below code*
+
+First, we can visualize the prevalence of those taxa in each phylum as below.
+
+```{r}
+
+# Subset to the remaining phyla
+prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(phyloseq, "Phylum"))
+
+ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(phyloseq) * 100,color=Phylum)) +
+  # Include a guess for parameter
+        geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) + 
+        geom_point(size = 2, alpha = 0.7) +
+        scale_x_log10() +  
+        xlab("Total read counts") + 
+        ylab("Prevalence (% samples)") +
+        facet_wrap(~Phylum) 
+
+
+```
+
+You can see some of taxa were low-prevalent.
+
+```{r}
+
+prevalenceThreshold = 0.1 * nsamples(phyloseq)
+prevalenceThreshold
+
+```
+
+As we have less than 20 samples, 5% filtering cannot filter any taxa. So I temporarilly used 10% as prevalence cut.
+
+
+
+
+
+```{r}
+
+taxa_to_keep = rownames(prevdf1)[(prevdf1$Prevalence >= prevalenceThreshold)]
+phyloseq_filtered = prune_taxa(taxa_to_keep, phyloseq)
+
+```
+
+We filtered 48 taxa, that they were having prevalecne lower than 1.9!
+
+Now, let's see how many genus do we have. 
+
+```{r}
+length(get_taxa_unique(phyloseq_filtered, taxonomic.rank = "Genus"))
+```
+
+There are 40 genuses, and
+
+
+```{r}
+tax_table(phyloseq_filtered) %>%
+        data.frame %>%
+        .$Genus %>% 
+        table(useNA = "always")
+```
+
+We have multiple species within each Genera. And Quite many taxa were not annotated at Genus level.
+
+
+# Lets remove taxa without Genus assignment
+
+```{r}
+
+phyloseq_genus = tax_glom(phyloseq_filtered, "Genus", NArm = TRUE)
+
+```
+
+# Relative abundacne
+
+Now, we can look at their abundance barplot. 
+
+
+```{r}
+
+plot_bar(phyloseq_genus, fill = "Genus") +
+        ylab("Total read counts")
+
+```
+Alternatively,
+
+```{r}
+
+# Create a df with all `Top 10 Genus` and flag the top 20
+top <- phyloseq_genus %>% taxa_sums %>% sort(decreasing=TRUE) %>% 
+        names %>% as.data.frame(labels=TRUE) %>% rename(`Top 10 Genus`=".") %>%
+        mutate(`Top 10 Genus`=as.factor(case_when( #create agg`Top 10 Genus` variable
+                row_number()<=10~`Top 10 Genus`,row_number()>10~'Other'
+                )
+                )
+               )
+top
+top_tax_table <- tax_table(phyloseq_genus) %>% data.frame() %>% 
+        mutate(ASV = rownames(.),
+                `Top10Genus` = case_when(ASV %in% top$`Top 10 Genus` ~ Genus,
+                                          .default = "Others")
+        )
+
+phyloseq_genus_top_10 <- merge_phyloseq(tax_table(as.matrix(top_tax_table)),
+                                        otu_table(phyloseq_genus),
+                                        sample_data(phyloseq_genus))
+
+
+plot_bar(phyloseq_genus_top_10, fill = "Top10Genus") +
+        ylab("Total read counts")
+
+
+```
+As I thaught in the lecture, the sequencing dataset's total read counts does not mean something. It need to be noralized to `relative abundance` unless its sequencing procedure is contianing internal standards (i.e., spiek-ins) or other data such as ddPCR/PCR abundance estimates.
+
+```{r}
+
+phyloseq_rel <- transform_sample_counts(phyloseq_genus_top_10, function(x){x/sum(x)})
+
+```
+
+```{r}
+plot_bar(phyloseq_rel, fill = "Top10Genus") +
+        ylab("Total read counts")
+        
+```
+We had one variable! Can we facet the plot by its sample data.
+
+```{r}
+plot_bar(phyloseq_rel, fill = "Top10Genus") +
+        ylab("Total read counts") +
+        facet_wrap(~When, scales = "free")
+        
+```
+
+With more functions, we can make the plot prettier
+
+```{r}
+plot_bar(phyloseq_rel, fill = "Top10Genus") +
+        ylab("Total read counts") +
+        theme_classic() +
+        theme(axis.text.x = element_text(angle = 90)) +
+        scale_fill_brewer(type = "qual", palette = 3) +
+        facet_wrap(~When, scales = "free") +
+        ggtitle("Microbiome composition by sampling event time")
+        
+        
+        
+```
+Can you see the difference? 
+
+Of course ifyou not. We need to calculate some *simple matrices* so that a number can represent the data at once.
+
+`microbiome::diversity()` function with a phyloseqobject as a input, will generate multiple alpha-diveristy indices at once!
+
+
+```{r}
+
+microbiome::alpha(phyloseq_rel)
+
+```
+
+Let's add the diversity indices to original sample_data().
+
+```{r}
+sample_data_with_alpha <-
+        phyloseq_rel %>%
+        sample_data() %>%
+        merge(., #Merge function will do the same thing as vloopup at excel
+              microbiome::alpha(phyloseq_rel),
+              by = 0) %>%
+        column_to_rownames("Row.names") %>%
+        sample_data
+
+sample_data(phyloseq_rel) <- sample_data_with_alpha
+
+```
+
+# Alpha diversity boxplots
+
+```{r}
+sample_data_with_alpha %>%
+        ggplot(aes(x = When, y = observed)) +
+        geom_boxplot() +
+        xlab("Species richness") +
+        theme_classic(base_size = 15)
+
+```
+
+As you can see, the alpha-diversity (species richenss) seemd to have different values.
+
+```{r}
+sample_data_with_alpha %>%
+        ggplot(aes(x = When, y = diversity_inverse_simpson)) +
+        geom_boxplot() +
+        xlab("Inverse Simpson") +
+        theme_classic(base_size = 15)
+
+```
+
+
+```{r}
+sample_data_with_alpha %>%
+        ggplot(aes(x = When, y = diversity_shannon)) +
+        geom_boxplot() +
+        xlab("Inverse Simpson") +
+        theme_classic(base_size = 15)
+
+```
+
+```{r}
+sample_data_with_alpha %>%
+        ggplot(aes(x = When, y = dominance_dbp)) +
+        geom_boxplot() +
+        xlab("Berger Perker index") +
+        theme_classic(base_size = 15)
+
+```
+
+It seems like there are multiple different changes in alpha diversity!
+
+
+
+# How about Beta?
+
+Distances between two samples, can be calculated in many ways.
+
+Famous calculations, can be done with `dist()` function 
+
+## Beta diversity calculation {.tabset}
+
+### Bray-Curtis distnaces
+
+```{r}
+
+phyloseq::distance(phyloseq_rel, method = "bray")
+
+```
+
+
+### Jaccard distnaces
+
+```{r}
+
+phyloseq::distance(phyloseq_rel, method = "jaccard")
+
+```
+
+
+### Bray-Curtis distnaces
+
+```{r}
+
+phyloseq::distance(phyloseq_rel, method = "horn")
+
+```
+
+These distances, cannot be displayed in single pannel as they are having multiple dimensions. Then need to be ordinated (scaled-down to 2 dimension).
+
+###{-}
+
+
+## Ordination {.tabset}
+
+### Principal Coordinates Analysis with Bray-Curtis dist
+
+```{r}
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "PCoA", "bray"),
+                col = "When"
+                )
+```
+
+### Principal Coordinates Analysis with Bray-Curtis dist
+
+
+```{r}
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "MDS", "jaccard"),
+                col = "When"
+                )
+```
+
+### Redundancy analysis (RDA) with Morisita-Horn index
+
+```{r}
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "RDA", "horn"),
+                col = "When"
+                )
+```
+
+### PCA with Morisita-Horn index
+
+```{r}
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "RDA", "horn"),
+                col = "When"
+                ) +
+          stat_ellipse(type = "norm", linetype = 2) +
+        stat_ellipse(type = "t") +
+        theme_classic() +
+        scale_color_brewer(type = "qual")
+        
+```
+
+# Species richness was different across samples. Was there a effect of sequencing depth?
+
+Calculating total reads
+
+```{r}
+
+sample_data(phyloseq_rel)$total_reads <- sample_sums(phyloseq_filtered)
+
+sample_data(phyloseq_rel)
+
+```
+
+Making plot of rarefaction curve
+
+```{r}
+sample_data(phyloseq_rel) %>%
+        data.frame() %>% 
+        ggplot(aes(x = total_reads, y = observed)) +
+        geom_point()
+
+
+```
+Color coding with sample data
+
+
+```{r}
+sample_data(phyloseq_rel) %>%
+        data.frame() %>% 
+        ggplot(aes(x = total_reads, y = observed, col = When)) +
+        geom_point() +
+        theme_classic()
+        
+```
+
+It may needs further investigation.
+
+Next lecture will cover how to analyze differences between those to groups ***statistically*** and how to run *multivariate* analysis!
+
+# Bibliography
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+#===============================================================================
+#BTC.LineZero.Footer.1.1.0
+#===============================================================================
+#R markdown citation generator.
+#===============================================================================
+#RLB.Dependencies:
+#   magrittr, pacman, stringr
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#BTC.Dependencies:
+#   LineZero.Header
+#===============================================================================
+#Generates citations for each explicitly loaded library.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+str_libraries <- c("r", str_libraries)
+for (str_libraries in str_libraries) {
+        str_libraries |>
+                pacman::p_citation() |>
+                print(bibtex = FALSE) |>
+                capture.output() %>%
+                .[-1:-3] %>% .[. != ""] |>
+                stringr::str_squish() |>
+                stringr::str_replace("_", "") |>
+                cat()
+        cat("\n")
+}
+#===============================================================================
+```
