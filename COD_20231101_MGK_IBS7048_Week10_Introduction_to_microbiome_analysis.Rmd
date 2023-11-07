@@ -101,15 +101,18 @@ And it can be loaded to a new R session like below!
 
 ```{r}
 
-
+getwd()
 
 library(phyloseq)
 library(tidyverse)
 library(microbiome)
 library(vegan)
+#source("https://raw.githubusercontent.com/joey711/phyloseq/master/inst/scripts/installer.R",
+#       local = TRUE)
 
-phyloseq <- readRDS("phyloseq_example.rds")
 
+phyloseq <- readRDS("/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/phyloseq_example.rds")
+phyloseq
 ```
 
 
@@ -214,7 +217,7 @@ prevdf = apply(X = otu_table(phyloseq),
 prevdf = data.frame(Prevalence = prevdf,
                       TotalAbundance = taxa_sums(phyloseq),
                       tax_table(phyloseq))
-
+prevdf
 
 plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))}) %>% 
         rename(avg_reads = "1", prevalence = "2")
@@ -256,6 +259,7 @@ ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(phyloseq) * 100,color=
 You can see some of taxa were low-prevalent.
 
 ```{r}
+nsamples(phyloseq)
 
 prevalenceThreshold = 0.1 * nsamples(phyloseq)
 prevalenceThreshold
@@ -271,8 +275,8 @@ As we have less than 20 samples, 5% filtering cannot filter any taxa. So I tempo
 ```{r}
 
 taxa_to_keep = rownames(prevdf1)[(prevdf1$Prevalence >= prevalenceThreshold)]
+taxa_to_keep
 phyloseq_filtered = prune_taxa(taxa_to_keep, phyloseq)
-
 ```
 
 We filtered 48 taxa, that they were having prevalecne lower than 1.9!
@@ -349,6 +353,7 @@ As I thaught in the lecture, the sequencing dataset's total read counts does not
 ```{r}
 
 phyloseq_rel <- transform_sample_counts(phyloseq_genus_top_10, function(x){x/sum(x)})
+
 
 ```
 
@@ -432,14 +437,6 @@ sample_data_with_alpha %>%
 ```
 
 
-```{r}
-sample_data_with_alpha %>%
-        ggplot(aes(x = When, y = diversity_shannon)) +
-        geom_boxplot() +
-        xlab("Inverse Simpson") +
-        theme_classic(base_size = 15)
-
-```
 
 ```{r}
 sample_data_with_alpha %>%
@@ -542,6 +539,8 @@ plot_ordination(physeq = phyloseq_rel,
 Calculating total reads
 
 ```{r}
+
+sample_sums(phyloseq_filtered)
 
 sample_data(phyloseq_rel)$total_reads <- sample_sums(phyloseq_filtered)
 
