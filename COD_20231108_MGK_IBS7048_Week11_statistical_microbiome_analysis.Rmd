@@ -108,6 +108,7 @@ library(phyloseq)
 library(tidyverse)
 library(microbiome)
 library(vegan)
+library(ggplot2)
 #source("https://raw.githubusercontent.com/joey711/phyloseq/master/inst/scripts/installer.R",
 #       local = TRUE)
 
@@ -145,9 +146,9 @@ Paired t-test
 
 ```{r}
 
-t.test(mpg$cty,
-       mpg$hwy,
-       paired = T)
+t.test(mpg$cty, mpg$hwy, paired = T)
+       
+
 
 ```
 
@@ -155,8 +156,11 @@ t.test(mpg$cty,
 Unpaired t-test
 
 ```{r}
+mpg$class
+mpg %>% filter(class == "2seater")%>% .$cty
 
 city_mpg_2seater <- mpg %>% filter(class == "2seater") %>% .$cty
+
 city_mpg_midsize <- mpg %>% filter(class == "midsize") %>% .$cty
 
 city_mpg_2seater
@@ -268,13 +272,14 @@ Multiple linear regression can be don by just ***adding a new variable to formul
 ```{r}
 
 lm(data = mpg,
-        formula = hwy ~ class + as.factor(year)) %>%
+        formula = hwy ~ class * as.factor(year)) %>%
         summary
 
 ```
 
 # Statistical tests for alpha diversity
 ```{r}
+microbiome::alpha(phyloseq)
 
 
 sample_data_with_alpha <-
@@ -287,7 +292,7 @@ sample_data_with_alpha <-
         sample_data
 
 sample_data(phyloseq) <- sample_data_with_alpha
-
+sample_data_with_alpha
 ```
 
 # Alpha diversity boxplots
@@ -296,7 +301,7 @@ sample_data(phyloseq) <- sample_data_with_alpha
 sample_data_with_alpha %>%
         ggplot(aes(x = When, y = observed)) +
         geom_boxplot() +
-        xlab("Species richness") +
+        xlab("Genus richness") +
         theme_classic(base_size = 15)
 
 ```
@@ -391,7 +396,7 @@ There is significant correlation !
 
 ```{r}
 
-ggplot(data = sample_data_with_alpha, aes(x = final_reads, y = evenness_simpson)) +
+ggplot(data = sample_data_with_alpha, aes(x = final_reads, y = observed)) +
         geom_smooth(method = "lm", 
                     se = T, 
                     color = "red", 
@@ -400,7 +405,7 @@ ggplot(data = sample_data_with_alpha, aes(x = final_reads, y = evenness_simpson)
         geom_point(aes(col = When)) +
         theme_classic( base_family = "serif", base_size = 20) +
         geom_label(x = 12000, y = 60,
-                  label = lm_eqn(lm(data = data.frame(sample_data_with_alpha), evenness_simpson ~ final_reads)),
+                  label = lm_eqn(lm(data = data.frame(sample_data_with_alpha), observed ~ final_reads)),
                   parse = TRUE, 
                   family='serif',
                   size = 8, label.size = 0, color = "red")#, fill = alpha(c("white"),1)) 
@@ -422,8 +427,8 @@ The association we 'obsereved' was not because of experimental condition, but du
 
 ```{r}
 
-lm(data = data.frame(sample_data_with_alpha),
-   dominance_core_abundance ~ final_reads + When) %>% summary
+glm(data = data.frame(sample_data_with_alpha),
+   as.factor(When) ~ final_reads, family = "binomial") %>% summary
 
 ```
 
@@ -442,6 +447,7 @@ How would it change the association for beta diversity?
 ```{r}
 
 phyloseq_rel <- phyloseq %>% transform_sample_counts(., function(x) {x/sum(x)})
+
 sample_data(phyloseq_rel) <- sample_data_with_alpha
 
 plot_ordination(physeq = phyloseq_rel,
@@ -498,7 +504,7 @@ Based on sampling point
 
 ```{r}
 
-
+set.seed(1)
 
 adonis(formula = distance(phyloseq, method = "bray") ~ When,
        data = data.frame(sample_data_with_alpha),
