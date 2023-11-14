@@ -602,8 +602,8 @@ ps %>% refseq()
 # Saving data
 
 ```{r}
-saveRDS(ps, "phyloseq_example.rds")
 
+saveRDS(ps, "/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/phyloseq_example_tree.rds")
 sample_data(ps)
 
 otu_table(ps)
