@@ -1,7 +1,7 @@
 ---
 title: "COD_20231129_MGK_IBS7048_week14_data_visualization_advanced"
 author: "Minsik Kim"
-date: "2023-11-01"
+date: "2023-11-29"
 output:
         rmdformats::downcute:
         downcute_theme: "chaos"
@@ -37,7 +37,7 @@ YAML_header <-
         '---
 title: "COD_20231129_MGK_IBS7048_week14_data_visualization_advanced"
 author: "Minsik Kim"
-date: "2032.11.01"
+date: "2032.11.29"
 output:
     rmdformats::downcute:
         downcute_theme: "chaos"
@@ -91,21 +91,14 @@ FUN.LineZero.Report()
 
 
 
-# Roading the data
+# Roading ggplot
 
 from previous lecture.. we generated a phyloseq object. it can be saved to hard disk using the below command.
 
 ```{r}
-#githubURL <- ("https://github.com/minsiksudo/IBS7048_Advanced_metagenomics/raw/21df48b7b9c7f80f48986ed3f583085cf3271cc1/phyloseq_example.rds")
-#download.file(githubURL,"phyloseq_examples.rds") 
 
-library(phyloseq)
+library(ggplot2)
 library(tidyverse)
-library(microbiome)
-library(vegan)
-
-phyloseq <- readRDS("phyloseq_examples.rds")
-
 
 ```
 
@@ -113,12 +106,18 @@ phyloseq <- readRDS("phyloseq_examples.rds")
 # Advanced ggplot2
 
 ```{r}
+
 head(mpg)
+
 ```
 
 Generating plot
 
 ```{r}
+plot(mpg$cty, mpg$hwy)
+
+
+
 
 mpg %>% 
         ggplot(aes(x = cty, y = hwy))
@@ -148,7 +147,7 @@ mpg %>%
 
 ```{r}
 mpg %>% 
-        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        ggplot(aes(x = cty, y = hwy, col = manufacturer, shape = as.factor(cyl))) +
         geom_point() +
         xlab("City mileage (MPG)") +
         ylab("Highway mileage (MPG)")
@@ -163,7 +162,7 @@ mpg %>%
         geom_point() +
         xlab("City mileage (MPG)") +
         ylab("Highway mileage (MPG)") +
-        theme(legend.position = "top")
+        theme(legend.position = "left")
 
 ```
 
@@ -180,7 +179,7 @@ mpg %>%
 ## theme() and element_markdown()
 
 ```{r}
-#install.packages("ggtext")
+install.packages("ggtext")
 library(ggtext)
 
 mpg %>% 
@@ -242,7 +241,6 @@ mpg %>%
 
 ```{r}
 
-
 mpg %>% 
         ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
         geom_point() +
@@ -275,7 +273,7 @@ mpg %>%
         geom_point() +
         xlab("City mileage (MPG)") +
         ylab("Highway mileage (MPG)") +
-        guides(col=guide_legend(ncol=5))
+        guides(col=guide_legend(nrow=3))
 
 ```
 
@@ -298,7 +296,8 @@ mpg %>%
         geom_point() +
         xlab("City mileage (MPG)") +
         ylab("Highway mileage (MPG)") +
-        guides(col=guide_legend(ncol=3, title.position = "bottom", override.aes = list(size = 4)))
+        guides(col=guide_legend(ncol=3, title.position = "bottom",
+                                override.aes = list(size = 4)))
 
 
 ```
@@ -311,7 +310,8 @@ mpg %>%
         geom_point() +
         xlab("City mileage (MPG)") +
         ylab("Highway mileage (MPG)") +
-        guides(col=guide_legend(ncol=3, title.position = "bottom", title.hjust = 1))
+        guides(col=guide_legend(ncol=3, title.position = "top", 
+                                title.hjust = 0.5))
 ```
 
 ```{r}
@@ -321,7 +321,12 @@ mpg %>%
         xlab("City mileage (MPG)") +
         ylab("Highway mileage (MPG)") +
         theme(legend.title = element_markdown()) +
-        guides(col=guide_legend(ncol=3, title.position = "bottom", title.hjust = 1, keywidth = 0.2, keyheight = 0.2, title = "*Manufacturer*<sup>company</sup>"))
+        guides(col=guide_legend(ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>"))
 ```
 
 
@@ -444,7 +449,8 @@ mpg %>%
         ylab("Highway mileage (MPG)") +
         theme(legend.title = element_markdown()) +
         guides(col=guide_legend(ncol=3, title.position = "bottom", title.hjust = 1, keywidth = 0.2, keyheight = 0.2, title = "*Manufacturer*<sup>company</sup>")) +
-        geom_smooth(method = "lm", aes(x = cty, y = hwy, col = manufacturer), se = F)
+        geom_smooth(method = "lm", aes(x = cty, y = hwy, col = manufacturer),
+                    se = F)
 
 
 ```
@@ -484,7 +490,7 @@ mpg %>%
         ylab("Highway mileage (MPG)") +
         theme(legend.title = element_markdown()) +
         guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
-        scale_color_manual(values = c("red", "blue", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey"))
+        scale_color_manual(values = c("#e5f5f9", "#99d8c9", "#2ca25f", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey"))
 
 
 
@@ -509,6 +515,7 @@ mpg %>%
 
 
 ```
+
 ### Automated colors1
 
 ```{r}
@@ -616,7 +623,7 @@ mpg %>%
         guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
         scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
                              '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
-        facet_wrap(~cyl)
+        facet_wrap(~manufacturer)
 
 ```
 ```{r}
@@ -648,7 +655,7 @@ mpg %>%
         guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
         scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
                              '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
-        facet_wrap(~cyl, nrow = 1, scales = "free")
+        facet_wrap(~cyl, nrow = 1, scales = "free_y")
 
 ```
 
@@ -801,7 +808,8 @@ ggarrange(
 
 
 ```{r}
-ggarrange(
+
+plot1 <-
         mpg %>% 
         ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
         theme_classic() +
@@ -814,11 +822,8 @@ ggarrange(
                              '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
         labs(tag = "A")
         
-        ,
-        
-        
-        
-        mpg %>% 
+
+plot2 <- mpg %>% 
         ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
         theme_classic() +
         geom_point() +
@@ -831,21 +836,14 @@ ggarrange(
                              '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
         facet_grid(year~cyl) +
         labs(tag = "B")
-        
-        ,
-        
-        common.legend = T
-        
-        
-        
-        ,
-        
-        widths = c(1,3)
+
+
+
+
+
+ggarrange(plot1, plot2, common.legend = T, widths = c(1,3))
         
                 
-        
-)
-
 
 
 ```
@@ -909,6 +907,7 @@ plot_ab
 ### pdf
 
 ```{r}
+#getwd()
 #dir.create("Figures")
 
 pdf(file = "Figures/Figure1.pdf",   # The directory you want to save the file in
@@ -956,7 +955,8 @@ How to use kbl
 
 ```{r}
 
-#install.packages("kableExtra")
+#devtools::install_github("kupietz/kableExtra")
+install.packages("kabelExtra")
 
 library(kableExtra)
 
@@ -967,6 +967,8 @@ library(kableExtra)
 
 
 ```{r}
+mpg
+
 
 mpg %>% 
         head() %>% 
@@ -1006,15 +1008,14 @@ chevy <- mpg %>%
         filter(manufacturer == "chevrolet") %>%
         lm(data = ., cty ~ year + cyl + displ) 
 
-
-
-
-
+audi %>% summary
 ```
 
 
 ```{r}
 
+audi$coefficients 
+confint(audi)
 paste0(audi$coefficients %>%
                round(2),
        ", (",
@@ -1099,7 +1100,7 @@ chevy2 <- cbind (
 data <- cbind(audi2, chevy2) %>% 
         as.data.frame()
         
-
+data
 
 row.names(data) <- c("Intercept",
                      "Year produced<sup>a</sup>",
@@ -1136,7 +1137,7 @@ table <- data %>%
         add_footnote("Only data from 1999 and 2008 were used.") %>%
         kable_styling(full_width = 0, html_font = "sans")
         
-
+table
 
 save_kable(table, "Figures/Table1.html")
 
