@@ -118,7 +118,7 @@ library(ggplot2)
 
 
 phyloseq <- readRDS("phyloseq_example.rds")
-phyloseq
+phyloseq %>% sample_data
 ```
 
 
