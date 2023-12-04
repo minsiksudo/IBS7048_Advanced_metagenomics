@@ -28,7 +28,11 @@ markdown:
 #=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
 knitr::opts_chunk$set(message=FALSE, warning = FALSE)
 
-path_working <- "/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/"
+path_working <- 
+         ifelse(sessionInfo()[1]$R.version$platform == "aarch64-apple-darwin20",
+                "/Volumes/MacMini Drive/Dropbox (Personal)/Inha/5_Lectures/Advanced biostatistics/scripts/BTE3207_Advanced_Biostatistics/", 
+                "/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/Advanced biostatistics/scripts/BTE3207_Advanced_Biostatistics/")
+
 path_library <- "/Library/Frameworks/R.framework/Resources/library"
 str_libraries <- c("tidyverse", "pacman", "yaml", "knitr", "rmarkdown", "rmdformats")
 
@@ -113,7 +117,7 @@ library(ggplot2)
 #       local = TRUE)
 
 
-phyloseq <- readRDS("/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/phyloseq_example.rds")
+phyloseq <- readRDS("phyloseq_example.rds")
 phyloseq
 ```
 
