@@ -204,7 +204,7 @@ This is my directory with the example files.
 Anyway, I can set name this path as `path`, as it is too long.
 
 ```{r}
-minsik_path = "/Volumes/macdrive/Dropbox/Inha/5_Lectures/2023/Advanced metagenomics/IBS7048_dataset"
+minsik_path = "Inha/5_Lectures/2023/Advanced metagenomics/IBS7048_dataset"
 
 # you can also use `<-` instead of `=`.
 ```
@@ -431,7 +431,9 @@ You can see some reads were removed from the fastq file!
 and they are now stored in a new directory.
 
 ```{r}
-list.files(path = "/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/Advanced metagenomics/IBS7048_dataset/filtered/")
+#minsik_path
+list.files(path = "Inha/5_Lectures/2023/Advanced metagenomics/IBS7048_dataset/filtered/")
+
 ```
 
 # Error prediction
@@ -439,6 +441,7 @@ list.files(path = "/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/Advanced 
 The DADA2 algorithm makes use of a parametric error model (err) and every amplicon dataset has a different set of error rates. The learnErrors method learns this error model from the data, by alternating estimation of the error rates and inference of sample composition until they converge on a jointly consistent solution. As in many machine-learning problems, the algorithm must begin with an initial guess, for which the maximum possible error rates in this data are used (the error rates if only the most abundant sequence is correct and all the rest are errors).
 
 ```{r }
+filtered_forward_reads
 error_F <- learnErrors(filtered_forward_reads
                        #, multithread=TRUE #
                        )
@@ -502,6 +505,8 @@ Table of sequences
 ```{r}
 
 seqtab <- makeSequenceTable(mergers)
+seqtab
+
 dim(seqtab)
 ```
 
@@ -510,6 +515,7 @@ dim(seqtab)
 Length of merged sequences
 
 ```{r}
+
 table(nchar(getSequences(seqtab)))
 
 ```
@@ -521,6 +527,7 @@ The core dada method corrects substitution and indel errors, but chimeras remain
 
 ```{r}
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+seqtab.nochim
 dim(seqtab.nochim)
 ```
 
