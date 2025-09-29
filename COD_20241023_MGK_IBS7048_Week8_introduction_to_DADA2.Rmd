@@ -566,10 +566,14 @@ We maintain formatted training fastas for the RDP training set, GreenGenes clust
 
 ```{r}
 
+minsik_path <- ("/mnt/4T_samsung/Dropbox/Sequencing_archive/")
 taxa <- assignTaxonomy(seqtab.nochim,
-                       paste0(minsik_path, "/silva_nr99_v138.1_train_set.fa"),
+                       paste0(minsik_path, "/silva_nr99_v138.1_train_set.fa.gz"),
                        multithread=TRUE)
 
+### THIS SPECIES LEVEL ANNOTATION IS NOT ACCURATE. BE CAREFULL WHEN YOU USE IT
+# taxa <- addSpecies(taxa,
+#                    paste0(minsik_path, "/silva_species_assignment_v138.1.fa"))
 
 ```
 
