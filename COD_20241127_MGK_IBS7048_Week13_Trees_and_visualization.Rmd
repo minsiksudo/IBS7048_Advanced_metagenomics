@@ -14,7 +14,26 @@ editor_options:
 markdown: 
         wrap: 72
 ---
-        
+   
+
+<style>
+  /* Default light mode styles */
+  .reactable {
+    background-color: #ffffff !important; /* Light background */
+    color: #000000 !important;            /* Dark text */
+    border-color: #cccccc !important;     /* Light border */
+  }
+
+</style>
+
+<style>
+  body {
+    font-family: "Times New Roman", serif;
+  }
+</style>
+
+## Loading packages
+
 ```{r warning=FALSE, message=FALSE, echo=FALSE, results='hide', setup}
 #===============================================================================
 #BTC.LineZero.Header.1.1.0
@@ -38,14 +57,14 @@ str_libraries <- c("pacman", "yaml", "knitr", "rmarkdown", "rmdformats")
 
 
 YAML_header <-
-        '---
+'---
 title: "COD_20241127_MGK_IBS7048_week13_dendrogram_and_phylogenetc_trees"
 author: "Minsik Kim"
 date: "2024.11.27"
 output:
     rmdformats::downcute:
         downcute_theme: "chaos"
-        codeolding: hide
+        code_folding: hide
         fig_width: 6
         fig_height: 6
 ---'
@@ -55,43 +74,44 @@ seed <- "20241127"
 #Loads libraries, file paths, and other document options.
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 FUN.LineZero.Boot <- function() {
-        .libPaths(path_library)
-        
-        require(pacman)
-        pacman::p_load(c("knitr", "rmarkdown", "rmdformats", "yaml","ggpubr"))
-        
-        knitr::opts_knit$set(root.dir = path_working)
-        
-        str_libraries |> unique() |> sort() -> str_libraries
-        pacman::p_load(char = str_libraries)
-        
-        set.seed(seed)
+    .libPaths(path_library)
+
+    require(pacman)
+    pacman::p_load(c("knitr", "rmarkdown", "rmdformats", "yaml"))
+
+    knitr::opts_knit$set(root.dir = path_working)
+
+    str_libraries |> unique() |> sort() -> str_libraries
+    pacman::p_load(char = str_libraries)
+
+    set.seed(seed)
 }
+
 FUN.LineZero.Boot()
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 #Outputs R environment report.
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 FUN.LineZero.Report <- function() {
-        cat("Line Zero Environment:\n\n")
-        paste("R:", pacman::p_version(), "\n") |> cat()
-        cat("Libraries:\n")
-        for (str_libraries in str_libraries) {
-                paste(
-                        "    ", str_libraries, ": ", pacman::p_version(package = str_libraries),
-                        "\n", sep = ""
-                ) |> cat()
-        }
-        paste("\nOperating System:", pacman::p_detectOS(), "\n") |> cat()
-        paste("    Library Path:", path_library, "\n") |> cat()
-        paste("    Working Path:", path_working, "\n") |> cat()
-        paste("Seed:", seed, "\n\n") |> cat()
-        cat("YAML Header:\n")
-        cat(YAML_header)
+    cat("Line Zero Environment:\n\n")
+    paste("R:", pacman::p_version(), "\n") |> cat()
+    cat("Libraries:\n")
+    for (str_libraries in str_libraries) {
+        paste(
+            "    ", str_libraries, ": ", pacman::p_version(package = str_libraries),
+            "\n", sep = ""
+        ) |> cat()
+    }
+    paste("\nOperating System:", pacman::p_detectOS(), "\n") |> cat()
+    paste("    Library Path:", path_library, "\n") |> cat()
+    paste("    Working Path:", path_working, "\n") |> cat()
+    paste("Seed:", seed, "\n\n") |> cat()
+    cat("YAML Header:\n")
+    cat(YAML_header)
 }
 FUN.LineZero.Report()
 
-
 ```
+
 
 
 # Distrances of data
@@ -105,8 +125,30 @@ data `USArrests` can be loaded using `data(USArrests)`, and this data set contai
 
 
 ```{r}
+getwd()
+githubURL <- ("https://github.com/minsiksudo/IBS7048_Advanced_metagenomics/raw/21df48b7b9c7f80f48986ed3f583085cf3271cc1/phyloseq_example.rds")
+download.file(githubURL,"phyloseq_examples.rds") 
 
+list.files()
+
+
+readRDS("/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/2024/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/phyloseq_examples.rds")
+
+phyloseq_data <- readRDS("phyloseq_examples.rds")
+
+library(phyloseq)
 library(tidyverse)
+
+phyloseq_data %>%
+        refseq() %>%
+        .[1] %>%
+        as.character()
+        
+
+phyloseq_data %>%
+        otu_table()
+        
+
 data(USArrests)
 
 head(USArrests)
@@ -115,6 +157,10 @@ head(USArrests)
 We can calculate the distanace of that data, using `dist()` function.
 
 ```{r}
+install.packages("stringdist")
+library(stringdist)
+USArrests
+USArrests
 US_dist <- dist(scale(USArrests), method = "euclidean")
 
 US_dist
@@ -181,11 +227,20 @@ For examples,
 ```{r}
 
 stringdist("a", "a")
+stringdist("aaa", "aaa")
+
+stringdist(
+        c("aaa", "bbb"),
+        c("aaa", "bbb"))
+
+stringdist(
+        c("aaa", "bbc", "bbbadsfasfsafas"),
+        c("aaa", "bbb", "dafafasfasfasfas"))
 
 
-stringdist(c("Inha", "Induck", "BiologicalEngineering"), 
-           c("Inha", "Inha", "Inha"))
-
+stringdist(
+        c("Inha", "Induck", "BiologicalEngineering"), 
+        c("Inha", "Inha", "Inha"))
 
 ```
 
@@ -204,6 +259,12 @@ Using this feature, we can calculate the distrance and generate the hierarchical
 ```{r}
 text <- c("Chiiiiken","CCCCChicken","Chickkkken","Cowwww","Cooow", "CCCCow")
 
+
+stringdistmatrix(
+        c("Chiiiiken","CCCCChicken","Chickkkken","Cowwww","Cooow", "CCCCow"),
+        c("Chiiiiken","CCCCChicken","Chickkkken","Cowwww","Cooow", "CCCCow")
+)
+
 distancemodels <- stringdist::stringdistmatrix(text, text)
 
 distancemodels
@@ -211,6 +272,7 @@ distancemodels
 
 
 ```{R}
+distancemodels
 rownames(distancemodels) <- text
 
 hc <- hclust(as.dist(distancemodels))
@@ -221,17 +283,60 @@ plot(hc)
 Or
 
 ```{r}
+install.packages("ggtree")
+library(ggtree)
 ggtree(hc) + 
   geom_tiplab(size = 4, 
-              family = "serif", 
-              hjust = 0.5, vjust = 2)
-
+              family = "sans", 
+              hjust = 1, vjust = 0)
 
 ```
 
 As same as the above example, Genomic sequences can be compared as below.
 
 ```{r}
+
+phyloseq_data %>%
+        refseq() %>%
+        .[1] %>%
+        as.character() %>%
+        .[[1]] 
+
+#ASV211,ASV215, ASV188,ASV75,ASV63, ASV225
+
+sequences <- c(phyloseq_data %>%
+        refseq() %>%
+        .[211] %>%
+        as.character() %>%
+        .[[1]],
+        phyloseq_data %>%
+        refseq() %>%
+        .[215] %>%
+        as.character() %>%
+        .[[1]] ,
+        phyloseq_data %>%
+        refseq() %>%
+        .[188] %>%
+        as.character() %>%
+        .[[1]],
+        phyloseq_data %>%
+        refseq() %>%
+        .[75] %>%
+        as.character() %>%
+        .[[1]] ,phyloseq_data %>%
+        refseq() %>%
+        .[63] %>%
+        as.character() %>%
+        .[[1]] ,phyloseq_data %>%
+        refseq() %>%
+        .[225] %>%
+        as.character() %>%
+        .[[1]] )
+
+
+
+
+sequences
 
 text <- c("AAAAAAAAAAAA",
           "AAAAAAAAAAAT", 
@@ -241,10 +346,21 @@ text <- c("AAAAAAAAAAAA",
           "GCGCGCGCGCGC")
 
 distancemodels <- stringdist::stringdistmatrix(text, text)
+distancemodels_seq <- stringdist::stringdistmatrix(sequences, sequences)
+
 rownames(distancemodels) <- text
+rownames(distancemodels_seq) <- c("Streptococcus","Streptococcus","Staphyloccocus",
+                                  "Clostridium","Clostridium","Unknown")
+
+distancemodels
+distancemodels_seq
 
 hc <- hclust(as.dist(distancemodels))
+hc_seq <- hclust(as.dist(distancemodels_seq))
+
 plot(hc)
+plot(hc_seq)
+
 
 ```
 If we have a data.frame of those sequences (their taxa names), we can construct a phylogenetic tree!
@@ -252,6 +368,9 @@ If we have a data.frame of those sequences (their taxa names), we can construct 
 
 ```{r}
 
+tax_table <- phyloseq_data %>%
+        tax_table()  %>%
+        data.frame
 
 distancemodels
 rownames(distancemodels) <- c("E.coli 1",
