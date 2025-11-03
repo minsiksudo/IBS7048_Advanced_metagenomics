@@ -1,0 +1,621 @@
+---
+title: "COD_202511020_MGK_IBS7048_week12_statistical_microbiome_analysis"
+author: "Minsik Kim"
+date: "2025-11-03"
+output:
+        rmdformats::downcute:
+        downcute_theme: "chaos"
+code_folding: show
+fig_width: 6
+fig_height: 6
+df_print: paged
+editor_options: 
+        chunk_output_type: inline
+markdown: 
+        wrap: 72
+---
+        
+```{r warning=FALSE, message=FALSE, echo=FALSE, results='hide', setup}
+#===============================================================================
+#BTC.LineZero.Header.1.1.0
+#===============================================================================
+#R Markdown environment setup and reporting utility.
+#===============================================================================
+#RLB.Dependencies:
+#   knitr, magrittr, pacman, rio, rmarkdown, rmdformats, tibble, yaml
+#===============================================================================
+#Input for document parameters, libraries, file paths, and options.
+#=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+
+
+# --- working dir:
+host <- Sys.info()[["nodename"]]
+
+paths <- list(
+  "bagel-S2600CO" = list(#Minsik's lab server
+    work = "/mnt/4T_samsung/Dropbox/",
+    lib  = "/home/bagel/R_lib/"
+  ),
+  "Minsiks-Mac-mini-2.local" = list(#Minsik's mac mini
+    work = "/Volumes/macdrive/Dropbox/",
+    lib  = "/Library/Frameworks/R.framework/Resources/library/"
+  ),
+  "Minsiks-MacBook-Pro.local|Minsiks-MBP.ht.home" = list(#Minsik's macbook pro
+    work = "/Users/minsikkim/Dropbox (Personal)/",
+    lib  = "/Library/Frameworks/R.framework/Resources/library/"
+  ),
+  "MGB030975" = list(#LaiLab mac mini
+    work = "/Volumes/Kingston/Dropbox/",
+    lib  = "/Library/Frameworks/R.framework/Resources/library/"
+  )
+)
+
+pick_cfg <- function(host, map) {
+  if (!is.null(map[[host]])) return(map[[host]])
+  for (k in names(map)) if (grepl(k, host, ignore.case = TRUE)) return(map[[k]])
+  NULL
+}
+cfg <- pick_cfg(host, paths)
+if (is.null(cfg)) stop("No path for the host: ", host)
+
+path_working <- cfg$work
+path_library <- cfg$lib
+
+# Adding libraries
+knitr::opts_knit$set(root.dir = path_working)
+
+str_libraries <- c("readxl", "phyloseq", "tidyverse", "pacman", "yaml")
+        
+YAML_header <-
+'---
+title: "Week 12 IBS 7048"
+author: "Minsik Kim"
+date: "2025.11.03"
+output:
+    rmdformats::downcute:
+        downcute_theme: "chaos"
+        code_folding: hide
+        fig_width: 11
+        fig_height: 11
+---'
+
+seed <- "20251103"
+
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Loads libraries, file paths, and other document options.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Boot <- function() {
+    .libPaths(path_library)
+
+    require(pacman)
+    pacman::p_load(c("knitr", "rmarkdown", "rmdformats", "yaml"))
+
+    knitr::opts_knit$set(root.dir = path_working)
+
+    str_libraries |> unique() |> sort() -> str_libraries
+    pacman::p_load(char = str_libraries)
+
+    set.seed(seed)
+}
+
+FUN.LineZero.Boot()
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Outputs R environment report.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Report <- function() {
+    cat("Line Zero Environment:\n\n")
+    paste("R:", pacman::p_version(), "\n") |> cat()
+    cat("Libraries:\n")
+    for (str_libraries in str_libraries) {
+        paste(
+            "    ", str_libraries, ": ", pacman::p_version(package = str_libraries),
+            "\n", sep = ""
+        ) |> cat()
+    }
+    paste("\nOperating System:", pacman::p_detectOS(), "\n") |> cat()
+    paste("    Library Path:", path_library, "\n") |> cat()
+    paste("    Working Path:", path_working, "\n") |> cat()
+    paste("Seed:", seed, "\n\n") |> cat()
+    cat("YAML Header:\n")
+    cat(YAML_header)
+}
+FUN.LineZero.Report()
+
+```
+
+This analysis pipe noted https://github.com/minsiksudo/BTE3207_Advanced_Biostatistics.
+
+
+# Roading the data
+
+from previous lecture.. we generated a phyloseq object. it can be saved to hard disk using the below command.
+
+`saveRDS(ps, "phyloseq_example.rds")`
+
+And it can be loaded to a new R session like below!
+
+```{r}
+
+getwd()
+
+library(phyloseq)
+library(tidyverse)
+library(microbiome)
+library(vegan)
+library(ggplot2)
+#source("https://raw.githubusercontent.com/joey711/phyloseq/master/inst/scripts/installer.R",
+#       local = TRUE)
+
+
+phyloseq <- readRDS("Inha/5_Lectures/2_IBS7048_Metagenomics/2025F/scripts/IBS7048_Advanced_metagenomics/phyloseq_examples_tree.rds")
+
+phyloseq
+
+```
+
+
+# Basics of statistical tests
+
+## MPG dataset
+
+MPG dataset is basic data installed in ggplot
+
+
+```{r}
+
+head(mpg)
+
+```
+
+Double-check the data type.
+
+```{r}
+
+str(mpg)
+
+```
+
+
+t.test fucntion will conduct basic t-test
+
+Paired t-test
+
+```{r}
+
+t.test(mpg$cty, mpg$hwy, paired = T)
+       
+
+
+```
+
+
+Unpaired t-test
+
+```{r}
+mpg$class
+mpg %>% filter(class == "2seater")%>% .$cty
+
+city_mpg_2seater <- mpg %>% filter(class == "2seater") %>% .$cty
+
+city_mpg_midsize <- mpg %>% filter(class == "midsize") %>% .$cty
+
+city_mpg_2seater
+city_mpg_midsize
+
+t.test(city_mpg_2seater,
+       city_mpg_midsize,
+       paired = F,
+       var.equal = F)
+
+```
+
+
+# Linear model 
+
+## Univariate linear model
+
+Boxplot of categorical x, continuous y
+
+```{r}
+
+boxplot(data = mpg, cty ~ class)
+
+```
+
+Linear model
+
+
+```{r}
+
+lm(data = mpg, 
+       cty ~ class)
+
+```
+
+Linear model - the output can be stored
+
+```{r}
+
+lm_result_mpg <- 
+        lm(data = mpg, 
+           cty ~ class)
+
+lm_result_mpg
+
+```
+
+The result of lm is a list having multiple caclulated factors
+
+```{r}
+
+lm_result_mpg %>% names
+
+
+```
+
+Summary of a linear model
+
+```{r}
+
+summary(lm_result_mpg)
+
+```
+
+This result will show you how different data is. (by the factor label of `class`)
+
+You have
+1. Estimate (beta)
+2. Standard errors
+3. **p**-values
+4. R-squared values
+
+## ANOVA
+
+Analysis of variance for linear model can be done to this linear model result.
+
+
+```{r}
+
+anova(lm_result_mpg)
+
+```
+
+## How can we test different multiple associations?
+
+```{r}
+
+ggplot(mpg,
+       aes(y = cty, x = class, fill = as.factor(year))) +
+        geom_boxplot()
+
+
+```
+
+## Anova - Multivariate
+
+```{r}
+
+lm(data = mpg,
+        formula = hwy ~ class + as.factor(year)) %>%
+        anova
+
+```
+
+## linear model - Multivariate
+
+Multiple linear regression can be don by just ***adding a new variable to formula***
+
+```{r}
+
+lm(data = mpg,
+        formula = hwy ~ class * as.factor(year)) %>%
+        summary
+
+```
+
+# Statistical tests for alpha diversity
+```{r}
+
+# microbiome package
+
+microbiome::alpha(phyloseq)
+
+
+sample_data_with_alpha <-
+        phyloseq %>%
+        sample_data() %>%
+        merge(., #Merge function will do the same thing as vloopup at excel
+              microbiome::alpha(phyloseq),
+              by = 0) %>%
+        column_to_rownames("Row.names") %>%
+        sample_data
+
+sample_data(phyloseq) <- sample_data_with_alpha
+sample_data_with_alpha
+```
+
+# Alpha diversity boxplots
+
+```{r}
+sample_data_with_alpha %>%
+        ggplot(aes(x = When, y = observed)) +
+        geom_boxplot() +
+        xlab("Genus richness") +
+        theme_classic(base_size = 15)
+
+```
+
+Statistical tests on alpha diversity (linear model)
+
+```{r}
+sample_data_with_alpha %>%
+        data.frame() %>% 
+        lm(data = ., observed ~ When) %>%
+        summary
+```
+
+The difference between those two group - is not statistically significant
+
+
+
+How about other outcomes? 
+
+```{r}
+sample_data_with_alpha %>%
+        data.frame() %>% 
+        lm(data = ., observed ~ evenness_simpson) %>%
+        summary
+```
+
+The evenness difference between those two group - is statistically significant
+
+```{r}
+sample_data_with_alpha %>%
+        data.frame() %>% 
+        lm(data = ., observed ~ dominance_core_abundance) %>%
+        summary
+
+```
+ 
+Core abundance was also statistically different.
+
+# How can we say this difference is not because of deeper sequencing? 
+
+```{r}
+sample_data_with_alpha$final_reads <- phyloseq %>% sample_sums
+
+sample_data_with_alpha %>%
+        data.frame() %>% 
+        ggplot(aes(x = final_reads, y = observed)) +
+        geom_point()
+
+
+```
+
+## Linear model of this association
+
+
+(As deeper sequencing identified more taxa)
+
+```{r}
+
+
+lm_eqn <- function(m){
+    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+         list(a = format(unname(coef(m)[1]), digits = 2),
+              b = format(unname(coef(m)[2]), digits = 2),
+             r2 = format(summary(m)$r.squared, digits = 3)))
+    as.character(as.expression(eq));
+}
+
+
+ggplot(data = sample_data_with_alpha, aes(x = final_reads, y = observed)) +
+        geom_smooth(method = "lm", 
+                    se = T, 
+                    color = "red", 
+                    linetype = "dashed"
+                    ) +  # Plot regression slope
+        geom_point() +
+        theme_classic( base_family = "serif", base_size = 20) +
+        geom_label(x = 12000, y = 60,
+                  label = lm_eqn(lm(data = data.frame(sample_data_with_alpha), observed ~ final_reads)),
+                  parse = TRUE, 
+                  family='serif',
+                  size = 8, label.size = 0, color = "red")#, fill = alpha(c("white"),1)) 
+
+```
+
+```{r}
+
+lm(data = data.frame(sample_data_with_alpha), observed ~ final_reads) %>% summary
+
+```
+
+There is significant correlation !
+
+```{r}
+
+ggplot(data = sample_data_with_alpha, aes(x = final_reads, y = observed)) +
+        geom_smooth(method = "lm", 
+                    se = T, 
+                    color = "red", 
+                    linetype = "dashed"
+                    ) +  # Plot regression slope
+        geom_point(aes(col = When)) +
+        theme_classic( base_family = "serif", base_size = 20) +
+        geom_label(x = 12000, y = 60,
+                  label = lm_eqn(lm(data = data.frame(sample_data_with_alpha), observed ~ final_reads)),
+                  parse = TRUE, 
+                  family='serif',
+                  size = 8, label.size = 0, color = "red")#, fill = alpha(c("white"),1)) 
+
+```
+
+Even for evenness, this association seem to have a significant term in general.
+
+### Multiple linear regression
+
+```{r}
+
+lm(data = data.frame(sample_data_with_alpha),
+   evenness_simpson ~ final_reads + When) %>% summary
+
+```
+
+The association we 'obsereved' was not because of experimental condition, but due to different final reads.
+
+```{r}
+
+glm(data = data.frame(sample_data_with_alpha),
+   as.factor(When) ~ final_reads, family = "binomial") %>% summary
+
+```
+
+However, the change of dominance was due to experimental condition.
+
+
+So, the *TRUE* change between the samples from early and late phase, was `Dominance`.
+
+How would it change the association for beta diversity?
+
+
+# Ordination
+
+### Principal Coordinates Analysis with Bray-Curtis dist
+
+```{r}
+
+phyloseq_rel <- phyloseq %>% transform_sample_counts(., function(x) {x/sum(x)})
+
+sample_data(phyloseq_rel) <- sample_data_with_alpha
+
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "PCoA", "bray"),
+                col = "When"
+                ) +
+        geom_point(size = 8)
+```
+
+These two groups seems different. Is it really different, by sequencing depth or the sampling phase?
+
+
+```{r}
+
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "PCoA", "bray"),
+                col = "final_reads"
+                ) +
+        geom_point(size = 8) +
+        scale_color_gradient(low = "blue", high = "red") 
+
+
+        
+```
+
+Symbols and colors at the sample time
+
+```{r}
+
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "PCoA", "bray"),
+                shape = "When",
+                col = "final_reads"
+                ) +
+        geom_point(size = 8) +
+        scale_color_gradient(low = "blue", high = "red") +
+        stat_ellipse(type = "norm", linetype = 2) +
+        stat_ellipse(type = "t") +
+        theme_classic() 
+        #scale_color_brewer(type = "qual")
+        
+```
+
+# PERMANOVA
+
+As betadiversity indices have multiple distances at the same time, the calculation must accompany multiple analyses, at a random order (permutation).
+
+This is permutational anova (PERMANOVA).
+
+
+## Univariate permutational anova (PERMANOVA).
+
+Based on sampling point
+
+```{r}
+distance(phyloseq, method = "bray")
+distance(phyloseq, method = "jaccard")
+data.frame(sample_data_with_alpha)
+set.seed(1)
+
+vegan::adonis2(formula = distance(phyloseq, method = "bray") ~ When + Day,
+       data = data.frame(sample_data_with_alpha), by = "terms",
+       permutations = 10000) 
+
+```
+
+There was difference.
+R-squared shows that the 25% of variance in beta-diversity was explained by `When` variable.
+
+## Multivariate anlaysis
+
+
+```{r}
+
+vegan::adonis2(formula = distance(phyloseq, method = "bray") ~ final_reads + When,
+       data = data.frame(sample_data_with_alpha), by = "terms",
+       permutations = 10000) 
+
+```
+
+
+
+There was difference.
+R-squared shows that the 24% of variance in beta-diversity was explained by `When` variable, and 32% was explained by `Fian reads`.
+
+--> 1% of variance in beta-diversity was ***ADJUSTED*** by sequencing depth.
+
+
+# decontam
+
+
+```{r}
+
+phyloseq2 <- readRDS("Inha/5_Lectures/2_IBS7048_Metagenomics/2025F/scripts/IBS7048_Advanced_metagenomics/phyloseq_ex_host_dep_deidentified.rds")
+
+
+```
+
+# rarefaction
+
+
+
+# Bibliography
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+#===============================================================================
+#BTC.LineZero.Footer.1.1.0
+#===============================================================================
+#R markdown citation generator.
+#===============================================================================
+#RLB.Dependencies:
+#   magrittr, pacman, stringr
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#BTC.Dependencies:
+#   LineZero.Header
+#===============================================================================
+#Generates citations for each explicitly loaded library.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+str_libraries <- c("r", str_libraries)
+for (str_libraries in str_libraries) {
+        str_libraries |>
+                pacman::p_citation() |>
+                print(bibtex = FALSE) |>
+                capture.output() %>%
+                .[-1:-3] %>% .[. != ""] |>
+                stringr::str_squish() |>
+                stringr::str_replace("_", "") |>
+                cat()
+        cat("\n")
+}
+#===============================================================================
+```
