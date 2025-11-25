@@ -135,6 +135,8 @@ from previous lecture.. we generated a phyloseq object. it can be saved to hard 
 And it can be loaded to a new R session like below!
 
 ```{r}
+# source("https://raw.githubusercontent.com/joey711/phyloseq/master/inst/scripts/installer.R",
+#       local = TRUE)
 
 getwd()
 
@@ -143,13 +145,18 @@ library(tidyverse)
 library(microbiome)
 library(vegan)
 library(ggplot2)
-#source("https://raw.githubusercontent.com/joey711/phyloseq/master/inst/scripts/installer.R",
-#       local = TRUE)
+
+
+# download.file("https://github.com/minsiksudo/IBS7048_Advanced_metagenomics/raw/refs/heads/main/phyloseq_example_tree.rds", destfile = "phyloseq_tree.rds")
+
+
+# download.file("https://github.com/minsiksudo/IBS7048_Advanced_metagenomics/raw/refs/heads/main/phyloseq_examples_host_depletion.rds", destfile = "phyloseq_ex_host_dep_deidentified.rds")
 
 
 phyloseq <- readRDS("Inha/5_Lectures/2_IBS7048_Metagenomics/2025F/scripts/IBS7048_Advanced_metagenomics/phyloseq_examples_tree.rds")
 
-phyloseq
+phyloseq2 <- readRDS("phyloseq_ex_host_dep_deidentified.rds")
+
 
 ```
 
@@ -162,6 +169,9 @@ MPG dataset is basic data installed in ggplot
 
 
 ```{r}
+#install.packages("ggplot2")
+
+library(ggplot2)
 
 head(mpg)
 
@@ -182,9 +192,9 @@ Paired t-test
 
 ```{r}
 
-t.test(mpg$cty, mpg$hwy, paired = T)
-       
+t.test(mpg$cty, mpg$hwy)
 
+t.test(mpg$cty, mpg$hwy, paired = F)
 
 ```
 
@@ -192,15 +202,19 @@ t.test(mpg$cty, mpg$hwy, paired = T)
 Unpaired t-test
 
 ```{r}
+
 mpg$class
-mpg %>% filter(class == "2seater")%>% .$cty
+
+mpg %>% 
+        filter(class == "2seater") %>% 
+        .$cty
 
 city_mpg_2seater <- mpg %>% filter(class == "2seater") %>% .$cty
 
 city_mpg_midsize <- mpg %>% filter(class == "midsize") %>% .$cty
 
-city_mpg_2seater
-city_mpg_midsize
+city_mpg_2seater 
+city_mpg_midsize 
 
 t.test(city_mpg_2seater,
        city_mpg_midsize,
@@ -217,9 +231,11 @@ t.test(city_mpg_2seater,
 Boxplot of categorical x, continuous y
 
 ```{r}
+mpg
+boxplot(data = mpg, 
+        cty ~ class)
 
-boxplot(data = mpg, cty ~ class)
-
+?boxplot
 ```
 
 Linear model
@@ -256,8 +272,15 @@ lm_result_mpg %>% names
 Summary of a linear model
 
 ```{r}
-
+mpg
+mpg$class %>% unique
 summary(lm_result_mpg)
+
+
+lm(data = mpg, 
+   formula = cty ~ year) %>%
+        summary
+
 
 ```
 
@@ -284,9 +307,15 @@ anova(lm_result_mpg)
 
 ```{r}
 
-ggplot(mpg,
-       aes(y = cty, x = class, fill = as.factor(year))) +
-        geom_boxplot()
+ggplot(data = mpg, aes(y = cty, x = class, fill = as.factor(year))) +
+        geom_boxplot() +
+        facet_wrap(~manufacturer, scales = "free_x", nrow = 1) +
+        theme_classic() +
+        guides(fill = guide_legend(title = "Year made")) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1),
+              legend.position = "top") +
+        scale_fill_manual(values = c("red", "blue")) +
+        ylab("City miles per gallon")
 
 
 ```
@@ -296,8 +325,13 @@ ggplot(mpg,
 ```{r}
 
 lm(data = mpg,
-        formula = hwy ~ class + as.factor(year)) %>%
+        formula = hwy ~ class + as.factor(year)) %>% summary
         anova
+
+
+aov(data = mpg,
+        formula = hwy ~ class + as.factor(year)) %>%
+        summary
 
 ```
 
@@ -313,10 +347,57 @@ lm(data = mpg,
 
 ```
 
+# Manipulating phyloseq object
+
+```{r}
+phyloseq
+
+phyloseq %>% sample_data
+
+?subset_samples
+
+subset_samples(phyloseq, Day >149) %>%
+        prune_taxa(taxa_sums(.) > 0, .) %>%
+        phy_tree() %>%
+        plot
+
+phyloseq
+subset_samples(phyloseq, When == "Early") %>%
+        prune_taxa(taxa_sums(.) > 0, .) %>%
+        phy_tree() %>%
+        plot
+
+otu_table(phyloseq)
+
+mapped_reads <- sample_sums(phyloseq)
+
+transform_sample_counts(phyloseq, function(x){x/sum(x)}) %>%
+        otu_table %>%
+        sample_sums()
+
+transform_sample_counts(phyloseq, function(x){x+10000}) %>%
+        otu_table
+?transform_sample_counts
+
+
+
+```
+
 # Statistical tests for alpha diversity
+
 ```{r}
 
 # microbiome package
+
+?vegan::diversity
+vegan::diversity(otu_table(phyloseq), index = "shannon")
+vegan::diversity(otu_table(phyloseq), index = "invsimpson")
+vegan::diversity(otu_table(phyloseq), index = "simpson")
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("microbiome")
 
 microbiome::alpha(phyloseq)
 
@@ -330,18 +411,50 @@ sample_data_with_alpha <-
         column_to_rownames("Row.names") %>%
         sample_data
 
+        phyloseq %>%
+        sample_data() %>%
+        merge(., #Merge function will do the same thing as vloopup at excel
+              microbiome::alpha(phyloseq),
+              by = 0)
+
 sample_data(phyloseq) <- sample_data_with_alpha
-sample_data_with_alpha
+sample_data(phyloseq)
 ```
 
 # Alpha diversity boxplots
 
 ```{r}
-sample_data_with_alpha %>%
-        ggplot(aes(x = When, y = observed)) +
-        geom_boxplot() +
-        xlab("Genus richness") +
+microbiome::alpha(phyloseq)
+
+sample_data(phyloseq) <- merge(sample_data(phyloseq) %>% data.frame(), 
+      sample_sums(phyloseq) %>% data.frame %>% dplyr::rename(final_reads = "."), by = 0) %>%
+        column_to_rownames("Row.names") %>% sample_data()
+
+sample_data(phyloseq) %>%
+        data.frame %>%
+        ggplot(aes(x = final_reads, y = diversity_inverse_simpson, col = When)) +
+        geom_smooth(method = "lm", se = T) +
+        geom_point() +
+        ylab("ASVs identified") +
+        xlab("Final microbial reads") +
         theme_classic(base_size = 15)
+
+sample_data(phyloseq) 
+
+sample_data(phyloseq) %>%
+        data.frame %>%
+        lm(diversity_inverse_simpson ~ final_reads, data = .) %>%
+        summary
+
+sample_data(phyloseq) %>%
+        data.frame %>%
+        lm(diversity_inverse_simpson ~ When, data = .) %>%
+        summary
+
+sample_data(phyloseq) %>%
+        data.frame %>%
+        lm(diversity_inverse_simpson ~ final_reads + When, data = .) %>%
+        summary
 
 ```
 
@@ -382,6 +495,7 @@ Core abundance was also statistically different.
 # How can we say this difference is not because of deeper sequencing? 
 
 ```{r}
+phyloseq %>% sample_sums
 sample_data_with_alpha$final_reads <- phyloseq %>% sample_sums
 
 sample_data_with_alpha %>%
@@ -466,6 +580,24 @@ The association we 'obsereved' was not because of experimental condition, but du
 
 ```{r}
 
+
+ggplot(data = sample_data_with_alpha, aes(x = dominance_relative, y = When)) +
+        geom_point(aes(col = When)) +
+        theme_classic( base_family = "serif", base_size = 20) +
+        geom_label(x = 12000, y = 60,
+                  label = lm_eqn(lm(data = data.frame(sample_data_with_alpha), observed ~ final_reads)),
+                  parse = TRUE, 
+                  family='serif',
+                  size = 8, label.size = 0, color = "red")#, fill = alpha(c("white"),1)) 
+
+
+glm(data = data.frame(sample_data_with_alpha),
+   as.factor(When) ~ dominance_relative, family = "binomial") %>% summary
+
+lm(data = data.frame(sample_data_with_alpha),
+   as.numeric(factor(sample_data_with_alpha$When, levels = c("Early", "Late"))) ~ dominance_relative) %>% summary
+
+
 glm(data = data.frame(sample_data_with_alpha),
    as.factor(When) ~ final_reads, family = "binomial") %>% summary
 
@@ -487,20 +619,39 @@ How would it change the association for beta diversity?
 
 phyloseq_rel <- phyloseq %>% transform_sample_counts(., function(x) {x/sum(x)})
 
+
+distance(phyloseq_rel, method="jaccard")
+ordinate(phyloseq_rel, "PCoA", "jaccard")
+
+
 sample_data(phyloseq_rel) <- sample_data_with_alpha
 
 plot_ordination(physeq = phyloseq_rel,
                 ordination = ordinate(phyloseq_rel, "PCoA", "bray"),
+                shape= "When",
+                col= "final_reads") +
+        geom_point(size = 8)
+
+phyloseq_rel %>% sample_data
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "PCoA", "jaccard"),
                 col = "When"
                 ) +
         geom_point(size = 8)
+
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq, "PCoA", "horn"),
+                col = "When"
+                ) +
+        geom_point(size = 8)
+
 ```
 
 These two groups seems different. Is it really different, by sequencing depth or the sampling phase?
 
 
 ```{r}
-
+?plot_ordination()
 plot_ordination(physeq = phyloseq_rel,
                 ordination = ordinate(phyloseq_rel, "PCoA", "bray"),
                 col = "final_reads"
@@ -547,9 +698,20 @@ distance(phyloseq, method = "jaccard")
 data.frame(sample_data_with_alpha)
 set.seed(1)
 
+set.seed(1)
+
+vegan::adonis2(formula = distance(phyloseq, method = "bray") ~ When,
+       data = data.frame(sample_data_with_alpha), by = "terms",
+       permutations = 1000 parallel = (parallel::detectCores()-1)) 
+
 vegan::adonis2(formula = distance(phyloseq, method = "bray") ~ When + Day,
        data = data.frame(sample_data_with_alpha), by = "terms",
-       permutations = 10000) 
+       permutations = 10000, parallel = (parallel::detectCores()-1)) 
+
+vegan::adonis2(formula = distance(phyloseq, method = "bray") ~ When + Day + final_reads + Day * When * final_reads,
+       data = data.frame(sample_data_with_alpha), by = "terms",
+       permutations = 10000, parallel = (parallel::detectCores()-1)) 
+
 
 ```
 
@@ -575,17 +737,57 @@ R-squared shows that the 24% of variance in beta-diversity was explained by `Whe
 --> 1% of variance in beta-diversity was ***ADJUSTED*** by sequencing depth.
 
 
+# New example phyloseq data from the host depletion study
+
+
+```{r}
+vegan::adonis2(formula = distance(phyloseq, method = "bray") ~ When + Day + final_reads + Day * When * final_reads,
+       data = data.frame(sample_data_with_alpha), by = "terms",
+       permutations = 10000, parallel = (parallel::detectCores()-1)) 
+
+plot_ordination(physeq = phyloseq_rel,
+                ordination = ordinate(phyloseq_rel, "PCoA", "bray"),
+                shape = "When",
+                col = "final_reads"
+                ) +
+        geom_point(size = 8) +
+        scale_color_gradient(low = "blue", high = "red") +
+        stat_ellipse(type = "norm", linetype = 2) +
+        stat_ellipse(type = "t") +
+        theme_classic() 
+        #scale_color_brewer(type = "qual")
+
+download.file("https://github.com/minsiksudo/IBS7048_Advanced_metagenomics/raw/refs/heads/main/phyloseq_examples_host_depletion.rds", destfile = "phyloseq_ex_host_dep_deidentified.rds")
+phyloseq2 %>% sample_data %>% names
+phyloseq2 <- readRDS("phyloseq_ex_host_dep_deidentified.rds")
+phyloseq3 <- readRDS("/Users/minsikkim/Dropbox (Personal)/Project_SICAS2_microbiome/5_Scripts/MGK/Host_depletion_git/data/PHY_20221129_MGK_host_tidy_tax_git.rds")
+sample_names(phyloseq3$phyloseq_count) <- sample_names(phyloseq2)
+
+
+
+sample_data(phyloseq2)$DNA_bac_ng_uL <- sample_data(phyloseq3$phyloseq_count)$DNA_bac_ng_uL
+
+sample_data(phyloseq2)$DNA_host_ng_uL <- sample_data(phyloseq3$phyloseq_count)$DNA_host_ng_uL
+saveRDS(phyloseq2, "Inha/5_Lectures/2_IBS7048_Metagenomics/2025F/scripts/IBS7048_Advanced_metagenomics/phyloseq_examples_host_depletion.rds")
+
+```
+
 # decontam
 
 
 ```{r}
-
-phyloseq2 <- readRDS("Inha/5_Lectures/2_IBS7048_Metagenomics/2025F/scripts/IBS7048_Advanced_metagenomics/phyloseq_ex_host_dep_deidentified.rds")
-
+#write your own code
+phyloseq2
 
 ```
 
+
 # rarefaction
+
+```{r}
+#write your own code
+phyloseq2
+```
 
 
 
