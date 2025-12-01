@@ -1,0 +1,1406 @@
+---
+title: "COD_20241204_MGK_IBS7048_week14_data_visualization_advanced"
+author: "Minsik Kim"
+date: "2024-12-04"
+output:
+        rmdformats::downcute:
+        downcute_theme: "chaos"
+code_folding: show
+fig_width: 6
+fig_height: 6
+df_print: paged
+editor_options: 
+        chunk_output_type: inline
+markdown: 
+        wrap: 72
+---
+        
+
+<style>
+  /* Default light mode styles */
+  .reactable {
+    background-color: #ffffff !important; /* Light background */
+    color: #000000 !important;            /* Dark text */
+    border-color: #cccccc !important;     /* Light border */
+  }
+
+</style>
+
+<style>
+  body {
+    font-family: "Times New Roman", serif;
+  }
+</style>
+
+```{r warning=FALSE, message=FALSE, echo=FALSE, results='hide', setup}
+#===============================================================================
+#BTC.LineZero.Header.1.1.0
+#===============================================================================
+#R Markdown environment setup and reporting utility.
+#===============================================================================
+#RLB.Dependencies:
+#   knitr, magrittr, pacman, rio, rmarkdown, rmdformats, tibble, yaml
+#===============================================================================
+#Input for document parameters, libraries, file paths, and options.
+#=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+knitr::opts_chunk$set(message=FALSE, warning = FALSE)
+
+
+path_working <- 
+        ifelse(sessionInfo()[1]$R.version$platform == "x86_64-pc-linux-gnu",
+               "/mnt/4T_samsung/Dropbox/",
+               ifelse(sessionInfo()[1]$R.version$platform == "aarch64-apple-darwin20",
+                      "/Volumes/macdrive/Dropbox/", 
+                      ""))
+path_library <- 
+        ifelse(sessionInfo()[1]$R.version$platform == "x86_64-pc-linux-gnu",
+               "/home/bagel/R_lib/",
+               "/Library/Frameworks/R.framework/Resources/library")
+
+
+
+str_libraries <- c("tidyverse", "reactable", "yaml", "pacman")
+
+
+
+
+YAML_header <-
+        '---
+title: "COD_20241204_MGK_IBS7048_week14_data_visualization_advanced"
+author: "Minsik Kim"
+date: "2024.12.04"
+output:
+    rmdformats::downcute:
+        downcute_theme: "chaos"
+        code_folding: hide
+        fig_width: 6
+        fig_height: 6
+---'
+
+seed <- "20241204"
+
+
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Loads libraries, file paths, and other document options.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Boot <- function() {
+        .libPaths(path_library)
+        
+        require(pacman)
+        pacman::p_load(c("knitr", "rmarkdown", "rmdformats", "yaml"))
+        
+        knitr::opts_knit$set(root.dir = path_working)
+        
+        str_libraries |> unique() |> sort() -> str_libraries
+        pacman::p_load(char = str_libraries)
+        
+        set.seed(seed)
+}
+FUN.LineZero.Boot()
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Outputs R environment report.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Report <- function() {
+        cat("Line Zero Environment:\n\n")
+        paste("R:", pacman::p_version(), "\n") |> cat()
+        cat("Libraries:\n")
+        for (str_libraries in str_libraries) {
+                paste(
+                        "    ", str_libraries, ": ", pacman::p_version(package = str_libraries),
+                        "\n", sep = ""
+                ) |> cat()
+        }
+        paste("\nOperating System:", pacman::p_detectOS(), "\n") |> cat()
+        paste("    Library Path:", path_library, "\n") |> cat()
+        paste("    Working Path:", path_working, "\n") |> cat()
+        paste("Seed:", seed, "\n\n") |> cat()
+        cat("YAML Header:\n")
+        cat(YAML_header)
+}
+FUN.LineZero.Report()
+
+
+```
+
+
+# Roading ggplot
+
+from previous lecture.. we generated a phyloseq object. it can be saved to hard disk using the below command.
+
+```{r}
+
+library(ggplot2)
+library(tidyverse)
+
+```
+
+
+# Advanced ggplot2
+
+```{r}
+mpg %>% view
+head(mpg)
+
+```
+
+Generating plot
+
+```{r}
+plot(mpg$cty, mpg$hwy)
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy)) 
+
+
+ggplot(data = mpg, aes(x = cty, y = hwy)) 
+
+```
+
+
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy)) +
+        geom_point()
+
+
+mpg %>% 
+        ggplot(aes(x = cty)) +
+        geom_histogram()
+
+
+```
+
+
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)")
+
+```
+
+```{r}
+# mpg$cyl <- as.factor(mpg$cyl)
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = as.factor(cyl))) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)")
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer, shape = as.factor(cyl))) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)")
+
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)")
+
+```
+
+## + theme()
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.position = "bottom")
+
+```
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(axis.title.y = element_text(family = "serif", size = 20))
+
+```
+       
+## theme() and element_markdown()
+
+```{r}
+install.packages("ggtext")
+library(ggtext)
+
+
+mpg
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() + 
+        geom_text(aes(label = model)) +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(axis.title.y = element_markdown(family = "serif", size = 15))
+
+install.packages("ggrepel")
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() + 
+        ggrepel::geom_text_repel(aes(label = model), max.overlaps = 100, ) +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(axis.title.y = element_markdown(family = "serif", size = 15))
+
+
+```
+
+
+*Basic markdown syntax is at https://www.markdownguide.org/basic-syntax/*
+
+### Italic
+
+```{r}
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("*Highway mileage (MPG)*") +
+        theme(axis.title.y = element_markdown(family = "serif", size = 15))
+
+
+```
+
+### Bold
+
+```{r}
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("**Highway mileage (MPG)**") +
+        theme(axis.title.y = element_markdown(family = "serif", size = 15))
+
+```
+
+### Italic
+
+```{r}
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("*Highway mileage (MPG)*") +
+        theme(axis.title.y = element_markdown(family = "serif", size = 20))
+
+```
+
+### superscript and subscript
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("High<sup>way</sup>
+             mileage 
+             <sub>(MPG)</sub>") +
+        theme(axis.title.y = element_markdown(family = "serif", size = 25))
+
+```
+
+### Comprehensive
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("*Hi***gh**<sub>way</sub> mile<sub>age</sub> ***(MPG)***") +
+        theme(axis.title.y = element_markdown(family = "serif", size = 30))
+
+```
+
+
+## + guides()
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(nrow=3))
+
+```
+
+
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(ncol=3, title.position = "bottom"))
+
+```
+
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(ncol=3, title.position = "bottom",
+                                override.aes = list(size = 4)))
+
+
+```
+
+
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(ncol=3, title.position = "top", 
+                                title.hjust = 0.5))
+```
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        #theme() +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>"))
+```
+
+
+## theme_...
+
+
+### classic 
+
+The order matters (theme and theme_classic)
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        theme_classic() 
+```
+
+### bw
+
+
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_bw() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>"))
+```
+### dark
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_dark() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>"))
+```
+### minimal
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_minimal() + 
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        #theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>"))
+```
+
+## geom_smooth
+
+### lm, one line
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>"))
+
+
+```
+### lm multiple line
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        geom_smooth(method = "lm", aes(x = cty, y = hwy, col = manufacturer))
+
+
+```
+
+### `se`, Confidence intervals
+
+
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+                guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        geom_smooth(method = "lm", aes(x = cty, y = hwy, col = manufacturer),
+                    se = F)
+
+
+```
+
+### gam, curvy line
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+                guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        geom_smooth(method = "gam", aes(x = cty, y = hwy, col = NA))
+
+
+
+```
+
+
+## Colors
+
+### manual colors
+
+
+```{r}
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+                guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        scale_color_manual(values = c("#e5f5f9", "#99d8c9", "#2ca25f", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey"))
+
+
+
+```
+
+### Changing labels
+
+```{r}
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        scale_color_manual(values = c("red", "blue", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey"), 
+                           labels = c("Audi", "Chevy", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey", "grey"))
+
+
+
+```
+
+### Automated colors1
+
+```{r}
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        scale_color_viridis_d()
+
+
+
+```
+
+### Automated colors2
+
+```{r}
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_brewer()
+
+
+
+```
+
+### Automated colors3
+
+```{r}
+
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_brewer(type = "qual", palette = 6)
+
+
+
+```
+
+### Automated colors4
+
+```{r}
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        scale_color_brewer(type = "div", palette = 2)
+
+
+```
+
+Note https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3 for more colors, that they are distinguishable.
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title.theme = element_markdown(),
+                                ncol=3,
+                                title.position = "top",
+                                title.hjust = 0.5,
+                                keywidth = 0.2,
+                                keyheight = 0.2,
+                                title = "*Manufacturer*<sup>company</sup>")) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'))
+
+```
+
+ + note for MetBrewer
+
+```{R}
+
+# install.packages("MetBrewer")
+# # or
+# install.packages("devtools")
+# devtools::install_github("BlakeRMills/MetBrewer")
+
+```
+
+## facetting
+
+
+## facet_wrap
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_wrap(~manufacturer)
+
+```
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_wrap(~cyl, nrow = 1)
+
+```
+
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_wrap(~cyl, nrow = 1, scales = "free_y")
+
+```
+
+### facet_grid
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_grid(year~cyl)
+
+```
+## Title
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_grid(year~cyl) +
+        ggtitle("Correlation between city mpg and high mpg")
+
+```
+
+## labs
+
+```{r}
+
+mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_grid(year~cyl) +
+        labs(tag = "A")
+
+```
+
+## ggarrange
+
+
+```{r}
+#install.packages("ggpubr")
+library(ggpubr)
+
+ggarrange(
+        mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        labs(tag = "A")
+        
+        ,
+        
+        
+        
+        mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown(),
+              axis.text.x = element_blank()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_grid(year~cyl) +
+        labs(tag = "B")
+        
+        
+)
+
+
+
+```
+### common.legend
+
+```{r}
+ggarrange(
+        mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        labs(tag = "A")
+        
+        ,
+        
+        
+        
+        mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown(),
+              axis.text.x = element_blank()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_grid(year~cyl) +
+        labs(tag = "B")
+        
+        ,
+        
+        common.legend = T
+        
+)
+
+
+
+```
+
+### widths = c()
+
+
+
+
+```{r}
+
+plot1 <-
+        mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        labs(tag = "A")
+        
+
+plot2 <- mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown(),
+              axis.text.x = element_blank()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_grid(year~cyl) +
+        labs(tag = "B")
+
+
+
+
+
+ggarrange(plot1, plot2, common.legend = T, widths = c(1,3))
+        
+                
+
+
+```
+
+## Saving plot file
+
+saving plot as an object
+
+```{r}
+plot_ab <- ggarrange(
+        mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        labs(tag = "A")
+        
+        ,
+        
+        
+        
+        mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown(),
+              axis.text.x = element_blank()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_grid(year~cyl) +
+        labs(tag = "B")
+        
+        ,
+        
+        common.legend = T
+        
+        
+        
+        ,
+        
+        widths = c(1,3)
+        
+                
+        
+)
+
+
+plot_ab
+
+```
+
+### Final assignment
+
+
+```{r}
+
+
+plot_abc <- ggarrange(#QUESTION 1
+        mpg %>%
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() + #QUESTION 2
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) + ##QUESTION 3
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) + #QUESTION 4
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        labs(tag = "A")
+        
+        ,
+        
+        
+        
+        mpg %>% 
+        ggplot(aes(x = cty, y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_point() +
+        xlab("City mileage (MPG)") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown(),
+              axis.text.x = element_blank()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        facet_grid(year~cyl) + #QUESTION 5
+        labs(tag = "B")
+        
+        ,
+        
+        
+        
+        mpg %>% 
+        ggplot(aes(x = as.factor(cyl), y = hwy, col = manufacturer)) +
+        theme_classic() +
+        geom_boxplot() +
+        xlab("Number of cylinders") +
+        ylab("Highway mileage (MPG)") +
+        theme(legend.title = element_markdown()) +
+        guides(col=guide_legend(title = "Manufacturer", override.aes = list(size = 4))) +
+        scale_color_manual(values = c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9',
+                             '#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')) +
+        #facet_grid(year~cyl) + #QUESTION 5
+        labs(tag = "C")
+        
+        , 
+        
+        
+        ncol = 3,
+        
+        
+        common.legend = T #QUESTION 6
+        
+        
+        
+        ,
+        
+        widths = c(1,1,2)#QUESTION 7
+        
+                
+        
+)
+
+
+plot_ab
+
+```
+
+
+### pdf
+
+```{r}
+
+setwd("Inha/5_Lectures/2024/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/")
+#dir.create("Figures")
+
+pdf(file = "Figures/Figure1.pdf",   # The directory you want to save the file in
+    width = 10, # The width of the plot in inches
+    height = 10 # The height of the plot in inches
+
+) #fixing multiple page issue
+
+plot_ab
+
+
+dev.off()
+
+
+```
+
+
+
+### png
+
+```{r}
+
+setwd("Inha/5_Lectures/2024/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/")
+
+#dir.create("Figures")
+
+png(file = "Figures/Figure1.png",   # The directory you want to save the file in
+    width = 180, # The width of the plot in inches
+    height = 170, # The height of the plot in inches
+    units = "mm",
+    res = 600
+) #fixing multiple page issue
+
+plot_ab
+
+
+dev.off()
+
+
+
+
+```
+
+How to use kbl
+
+# kableExtra package
+
+
+```{r}
+
+#devtools::install_github("kupietz/kableExtra")
+install.packages("kabelExtra")
+
+library(kableExtra)
+
+```
+
+## kbl
+
+
+
+```{r}
+mpg
+
+
+mpg %>% 
+        head() %>% 
+        kbl(format = "html", escape = 0)
+
+
+```
+
+## kable_styling
+
+
+
+```{r}
+
+mpg %>% 
+        head() %>% 
+        kbl(format = "html", escape = 0) %>%
+        kable_styling(full_width = 0, html_font = "sans") 
+
+
+
+
+```
+
+Application
+
+```{r}
+
+
+
+
+audi <- mpg %>% 
+        filter(manufacturer == "audi") %>%
+        lm(data = ., cty ~ year + cyl + displ) 
+
+chevy <- mpg %>% 
+        filter(manufacturer == "chevrolet") %>%
+        lm(data = ., cty ~ year + cyl + displ) 
+
+audi %>% summary
+```
+
+
+```{r}
+
+audi$coefficients 
+confint(audi)
+paste0(audi$coefficients %>%
+               round(2),
+       ", (",
+       confint(audi)[,1] %>%
+               round(2),
+       ", ",
+       confint(audi)[,2] %>%
+               round(2),
+       ")")
+
+
+
+```
+
+
+```{r}
+summary(audi)$coefficients %>% 
+        data.frame(check.names = F) %>% 
+        .$`Pr(>|t|)` %>%
+        round(., 4) %>%
+        format(nsmall = 4)
+```
+
+
+
+
+
+
+```{r}
+
+audi2 <- cbind (
+        `Effect (95% CIs)` = 
+               paste0(
+                       audi$coefficients %>%
+                               round(2),
+                       ", (",
+                       confint(audi)[,1] %>%
+                               round(2),
+                       ", ",
+                       confint(audi)[,2] %>%
+                               round(2),
+                       ")"),
+       `<i>p</i>-value` = summary(audi)$coefficients %>% 
+               data.frame(check.names = F) %>% 
+                .$`Pr(>|t|)` %>%
+                round(4) %>%
+               format(nsmall = 4),
+       ` ` = ifelse(summary(audi)$coefficients %>% 
+               data.frame(check.names = F) %>% 
+                .$`Pr(>|t|)` %>%
+                       as.numeric() < 0.05,
+               "*",
+               "")
+       )
+
+
+chevy2 <- cbind (
+        `Effect (95% CIs)` = 
+               paste0(
+                       chevy$coefficients %>%
+                               round(2),
+                       ", (",
+                       confint(chevy)[,1] %>%
+                               round(2),
+                       ", ",
+                       confint(chevy)[,2] %>%
+                               round(2),
+                       ")"),
+       `<i>p</i>-value` = summary(chevy)$coefficients %>% 
+               data.frame(check.names = F) %>% 
+                .$`Pr(>|t|)` %>%
+                round(4) %>%
+               format(nsmall = 4),
+       ` ` = ifelse(summary(chevy)$coefficients %>% 
+               data.frame(check.names = F) %>% 
+                .$`Pr(>|t|)`  %>%
+                       as.numeric() < 0.05,
+               "*",
+               "")
+       )
+
+data <- cbind(audi2, chevy2) %>% 
+        as.data.frame()
+        
+data
+
+row.names(data) <- c("Intercept",
+                     "Year produced<sup>a</sup>",
+                     "Number of cylinders",
+                     "Displacement")
+
+data 
+
+
+```
+
+https://blog.hubspot.com/website/how-to-bold-in-html#:~:text=To%20italicize%20the%20text%20in,style%20property%20set%20to%20italic.
+
+
+```{R}
+data %>%
+        kbl(format = "html", escape = 0) %>% 
+        kable_styling(full_width = 0, html_font = "sans") %>%
+        add_header_above(c(" " = 1, "Audi" = 3, "Chevrolet" = 3)) %>% 
+        kable_styling(full_width = 0, html_font = "sans") 
+
+```
+
+# Saving kbl file
+
+
+```{r}
+setwd("Inha/5_Lectures/2024/Advanced metagenomics/scripts/IBS7048_Advanced_metagenomics/")
+
+
+table <- data %>%
+        kbl(format = "html", escape = 0) %>% 
+        kable_styling(full_width = 0, html_font = "sans") %>%
+        add_header_above(c(" " = 1, "Audi" = 3, "Chevrolet" = 3)) %>% 
+        add_footnote("Only data from 1999 and 2008 were used.") %>%
+        kable_styling(full_width = 0, html_font = "sans")
+        
+table
+
+save_kable(table, "Figures/Table1.html")
+
+
+```
+
+
+# End of lecture
+
+# Bibliography
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+#===============================================================================
+#BTC.LineZero.Footer.1.1.0
+#===============================================================================
+#R markdown citation generator.
+#===============================================================================
+#RLB.Dependencies:
+#   magrittr, pacman, stringr
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#BTC.Dependencies:
+#   LineZero.Header
+#===============================================================================
+#Generates citations for each explicitly loaded library.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+str_libraries <- c("r", str_libraries)
+for (str_libraries in str_libraries) {
+        str_libraries |>
+                pacman::p_citation() |>
+                print(bibtex = FALSE) |>
+                capture.output() %>%
+                .[-1:-3] %>% .[. != ""] |>
+                stringr::str_squish() |>
+                stringr::str_replace("_", "") |>
+                cat()
+        cat("\n")
+}
+#===============================================================================
+```
